@@ -49,3 +49,18 @@ black-apply: # apply changes with 'black'
 
 ruff-apply: # resolve 'fixable errors' with 'ruff'
 	pipenv run ruff check --fix .
+
+##   Terraform Generated Makefile Additions                                   ##
+##   ---- Local Developer Deployment Commands ----                            ##
+
+# It is expected that the `create-zip` command is updated by the 
+# developer to match the needs of the application. This is just 
+# the default zip method for a very simple function.
+create-zip: # Create a .zip file of code
+	rm -rf cf-lambda-geo-auth.py.zip
+	zip -j cf-lambda-geo-auth.py.zip lambdas/*
+
+upload-zip: # Upload the .zip file to AWS S3 bucket
+	aws s3api put-object --bucket shared-files-$$(aws sts get-caller-identity --query Account --output text) --body cf-lambda-geo-auth.py.zip --key files/cf-lambda-geo-auth.py.zip
+
+##  End of Terraform Generated Makefile Additions                             ##
