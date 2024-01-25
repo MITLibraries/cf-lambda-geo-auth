@@ -7,7 +7,7 @@ resource "aws_lambda_function" "lambda_edge_geo_auth" {
   .
   .
   .
-  handler                        = "lambda_edge.lambda_handler"
+  handler                        = "lambda_edge.handler"
   .
   .
   .
