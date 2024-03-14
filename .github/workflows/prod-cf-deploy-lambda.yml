@@ -1,0 +1,33 @@
+### This is the Terraform-generated GitHub Actions workflow for cf-lambda    ###
+### applications for dev/stage/prod. It will publish the Lambda zip to S3    ###
+### and optionally re-apply Terraform in the Terraform Cloud                 ###
+### workloads-libraries-website-<env> workspace.                             ###
+## Rename this workflow appropriately after copying to application repo
+name: Prod CF Lambda@Edge Full Deploy
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  deploy-lambda:
+    ## We need to restrict this workflow to only run on releases on the main
+    ## branch while also allowing for manual runs in the GitHub web UI. The
+    ## GitHub context is different between releases and commits, so we have
+    ## to check two different values before we decide to run this.
+    if: ${{ github.ref == 'refs/heads/main' || github.event.release.target_commitish == 'main' }}
+    name: Push zip to S3 and Deploy CloudFront Distribution
+    uses: mitlibraries/.github/.github/workflows/cf-lambda-shared-deploy.yml@main
+    secrets: inherit
+    with:
+      AWS_REGION: us-east-1
+      ENVIRONMENT: prod
+      GHA_ROLE: ledge-geo-auth-gha-prod
+      TF_AUTO_APPLY: false
+      TF_WORKSPACE: workloads-libraries-website-prod
+      UPLOAD_ZIP: true
