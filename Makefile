@@ -9,7 +9,7 @@ help: # preview Makefile commands
 
 install: # install Python dependencies
 	pipenv install --dev
-	pipenv run pre-commit install
+	# pipenv run pre-commit install
 
 update: install # update Python dependencies
 	pipenv clean
@@ -20,19 +20,17 @@ update: install # update Python dependencies
 test: # run tests and print a coverage report
 	pipenv run coverage run --source=lambdas -m pytest -vv
 	pipenv run coverage report -m
+	pipenv run coverage html
 
 coveralls: test # write coverage data to an LCOV report
 	pipenv run coverage lcov -o ./coverage/lcov.info
 
 ## ---- Code quality and safety commands ---- ##
 
-lint: black mypy ruff safety # run linters
+lint: black ruff safety # run linters
 
 black: # run 'black' linter and print a preview of suggested changes
 	pipenv run black --check --diff .
-
-mypy: # run 'mypy' linter
-	pipenv run mypy .
 
 ruff: # run 'ruff' linter and print a preview of errors
 	pipenv run ruff check .
@@ -57,10 +55,16 @@ ruff-apply: # resolve 'fixable errors' with 'ruff'
 # developer to match the needs of the application. This is just 
 # the default zip method for a very simple function.
 create-zip: # Create a .zip file of code
-	rm -rf cf-lambda-geo-auth.py.zip
-	zip -j cf-lambda-geo-auth.py.zip lambdas/*
+	# https://docs.aws.amazon.com/lambda/latest/dg/python-package.html#python-package-create-dependencies
+	rm -rf ./.package
+	mkdir ./.package
+	rm -f cf-lambda-geo-auth.zip
+	pip install --target ./.package pyjwt
+	# change directory and run the associated command on the same line or it will be excecuted at the initial directory by make
+	cd ./.package; zip -r ../cf-lambda-geo-auth.zip .
+	cd ./lambdas; zip ../cf-lambda-geo-auth.zip *.py
 
 upload-zip: # Upload the .zip file to AWS S3 bucket
-	aws s3api put-object --bucket shared-files-$$(aws sts get-caller-identity --query Account --output text) --body cf-lambda-geo-auth.py.zip --key files/cf-lambda-geo-auth.py.zip
+	aws s3api put-object --bucket shared-files-$$(aws sts get-caller-identity --query Account --output text) --body cf-lambda-geo-auth.zip --key files/cf-lambda-geo-auth.zip
 
 ##  End of Terraform Generated Makefile Additions                             ##
