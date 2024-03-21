@@ -352,3 +352,25 @@ def test_handler_invalid_auth(event_invalid_auth):
                 ]
             },
         }
+
+
+def test_handler_missing_ssm_jwt_secret(event_happy_path):
+    with mock_aws():
+        client = boto3.client("ssm", region_name="us-east-1")
+        client.put_parameter(
+            Name="/apps/cf-lambda-geo-auth/auth-url",
+            Value="https://example.com/hallo",
+            Type="String",
+        )
+        with pytest.raises(RuntimeError):
+            lambda_edge.handler(event_happy_path, "fake context")
+
+
+def test_handler_missing_ssm_auth_url(event_happy_path):
+    with mock_aws():
+        client = boto3.client("ssm", region_name="us-east-1")
+        client.put_parameter(
+            Name="/apps/cf-lambda-geo-auth/jwt-secret", Value="secret", Type="String"
+        )
+        with pytest.raises(RuntimeError):
+            lambda_edge.handler(event_happy_path, "fake context")

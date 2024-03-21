@@ -52,23 +52,16 @@ def decode_jwt(usertoken, jwt_secret):
     return "valid"
 
 
-def handler(event, _context):
-    request = event["Records"][0]["cf"]["request"]
-    headers = request["headers"]
-
-    """
-    Check for session-id in request cookie in viewer-request event,
-    if session-id is absent, redirect the user to sign in page with original
-    request sent as redirect_url in query params.
-    """
-
+def load_ssm_params():
     client = boto3.client("ssm", region_name="us-east-1")
 
     ssm_params = client.get_parameters_by_path(
         Path="/apps/cf-lambda-geo-auth/", WithDecryption=False
     )
 
-    logging.info(ssm_params)
+    # define vars we'll load from SSM so we can easily check if we find values in SSM
+    jwt_secret = None
+    auth_url = None
 
     for param in ssm_params["Parameters"]:
         if param["Name"] == "/apps/cf-lambda-geo-auth/jwt-secret":
@@ -76,16 +69,45 @@ def handler(event, _context):
         if param["Name"] == "/apps/cf-lambda-geo-auth/auth-url":
             auth_url = param["Value"]
 
-    # Check for session-id in cookie, if present, then proceed with request
+    # confirm expected SSM params loaded properly
+    if jwt_secret is None:
+        msg = "/apps/cf-lambda-geo-auth/jwt-secret not found in parameter store"
+        logging.exception(msg)
+        raise RuntimeError(msg)
+
+    if auth_url is None:
+        msg = "/apps/cf-lambda-geo-auth/auth-url not found in parameter store"
+        logging.exception(msg)
+        raise RuntimeError(msg)
+
+    return jwt_secret, auth_url
+
+
+def handler(event, _context):
+    """Main function called during CloudFront Viewer Request for restricted resources.
+
+    Checks for a JWT token in the request cookie for CloudFront viewer-request events.
+    If the JWT token is absent, expired, or invalid, redirects the user to sign in page
+    (which is a separate app) with the original request sent as `cdn_resource` in query
+    params.
+
+    If JWT token is present and valid, returns the request which will provide the
+    requested file.
+    """
+    request = event["Records"][0]["cf"]["request"]
+    headers = request["headers"]
+    jwt_secret, auth_url = load_ssm_params()
+
+    # Check for jwt token in domain cookie, if present and valid, proceed with request
     jwt = parse_cookies(headers)
 
     parsed_jwt = validate_jwt(jwt, jwt_secret)
 
     if parsed_jwt == "valid":
-        # holy heck a valid user
         logging.info("valid user!")
         return request
 
+    # No valid JWT token found, redirect user to authenticate
     logging.info("need auth")
     # URI encode the original request to be sent as redirect_url in query params
     redirect_url = "https://{}{}?{}".format(
