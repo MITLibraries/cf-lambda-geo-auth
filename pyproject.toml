@@ -5,19 +5,14 @@
 [tool.black]
 line-length = 90
 
-[tool.mypy]
-disallow_untyped_calls = true
-disallow_untyped_defs = true
-exclude = ["tests/"]
-
 [tool.pytest.ini_options]
 log_level = "INFO"
 
 [tool.ruff]
 target-version = "py311"
-select = ["ALL", "PT"]
+lint.select = ["ALL", "PT"]
 
-ignore = [
+lint.ignore = [
     # default
     "ANN101", 
     "ANN102", 
@@ -27,6 +22,8 @@ ignore = [
     "PTH", 
 
     # project-specific
+    "ANN001",
+    "ANN201",
     "C90",
     "D100",
     "D101", 
@@ -37,11 +34,12 @@ ignore = [
     "PLR0913", 
     "PLR0915",
     "S320",
-    "S321", 
+    "S321",
+    "UP017"
 ]
 
 # allow autofix behavior for specified rules
-fixable = ["E", "F", "I", "Q"]
+lint.fixable = ["E", "F", "I", "Q"]
 
 # set max line length
 line-length = 90

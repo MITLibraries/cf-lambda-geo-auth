@@ -5,14 +5,16 @@ name = "pypi"
 
 [packages]
 sentry-sdk = "*"
+boto3 = "*"
+pyjwt = "*"
 
 [dev-packages]
 black = "*"
 coveralls = "*"
-mypy = "*"
 pre-commit = "*"
 pytest = "*"
 ruff = "*"
+moto = {extras = ["ssm"], version = "*"}
 
 [requires]
 python_version = "3.11"
